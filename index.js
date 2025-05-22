@@ -19,6 +19,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const fetch = require('node-fetch'); // ต้องติดตั้ง node-fetch
+
 const webhookURL = process.env.DISCORD_WEBHOOK_URL;
 async function sendDiscord(message, embed = null) {
     try {
@@ -28,8 +30,10 @@ async function sendDiscord(message, embed = null) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
+
         if (!res.ok) {
-            console.error('ส่งข้อความ Discord ล้มเหลว:', res.status, await res.text());
+            const text = await res.text();
+            console.error('ส่งข้อความ Discord ล้มเหลว:', res.status, text);
         } else {
             console.log('ส่งข้อความ Discord สำเร็จ');
         }
@@ -37,6 +41,7 @@ async function sendDiscord(message, embed = null) {
         console.error('ส่งข้อความ Discord ล้มเหลว:', error);
     }
 }
+
 
 const ADMIN_PASSWORD = '7890';
 function adminAuth(req, res, next) {
