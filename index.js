@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const admin = require('firebase-admin');
-const { sendDiscord } = require('../routes/discordNotifier');
+const { sendDiscord } = require('./routes/discordNotifier');
 const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
 firebaseConfig.private_key = firebaseConfig.private_key.replace(/\\n/g, '\n');
 
