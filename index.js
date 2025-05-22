@@ -9,7 +9,7 @@ firebaseConfig.private_key = firebaseConfig.private_key.replace(/\\n/g, '\n');
 admin.initializeApp({
     credential: admin.credential.cert(firebaseConfig),
 });
-
+sendDiscord('📢 ทดสอบการแจ้งเตือน Discord สำเร็จ!');
 const db = admin.firestore();
 const app = express();
 const port = 3000;
