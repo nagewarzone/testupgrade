@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');  // ต้องติดตั้งด้วย `npm install node-fetch@2`
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375109993766060163/hiyekifjjMItAEjaVv5xgrOmQg1nyyNdwQ0UJmE2wA_I3qQ6K3abWJcagz5kCiB4bxtw';
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375138470422384650/P_AsrLHzoCMPplokk7XLWEU6ej0fRWlbppOeh9ZbmYzlcQiU6_oMPTFodtLoahxZZEJZ';
 
 async function sendDiscord(content) {
   if (!DISCORD_WEBHOOK_URL) {
