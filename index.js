@@ -119,12 +119,14 @@ app.post('/proxy', async (req, res) => {
     }
 
     // ใช้พ้อยท์แลก topgm (แจ้งเตือน Discord ด้วยชื่อผู้เล่น)
-    if (action === 'usepoint') {
+   if (action === 'usepoint') {
+  const pointChange = req.body.pointChange;
+  const topgmChange = req.body.topgmChange;
+  const displayName = req.body.name || username;
+
   if (typeof pointChange !== 'number' || typeof topgmChange !== 'number') {
     return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
   }
-
-  const displayName = req.body.name || username; // fallback เผื่อไม่มี name
 
   const currentPoint = userData.point || 0;
   const currentTopgm = userData.topgm || 0;
@@ -137,10 +139,16 @@ app.post('/proxy', async (req, res) => {
   }
 
   if (newTopgm < 0) {
-    return res.json({ success: false, message: 'ไม่สามารถลบ topgm ได้มากกว่าที่มี' });
+    return res.json({ success: false, message: 'ไม่สามารถลบ TOPGM ได้มากกว่าที่มี' });
   }
 
-  await userRef.update({ point: newPoint, topgm: newTopgm });
+  await userRef.update({
+    point: newPoint,
+    topgm: newTopgm
+  });
+
+  return res.json({ success: true, message: 'อัปเดต POINT และ TOPGM สำเร็จ' });
+}
 
   // ใช้ชื่อตัวละครในข้อความแจ้งเตือนแทน username
   await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
