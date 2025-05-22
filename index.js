@@ -34,8 +34,9 @@ app.use(express.static(path.join(__dirname, 'public')));
  * @param {string} message ข้อความที่จะส่ง
  * @param {object|null} embed (optional) ถ้ามี embed object จะส่งแทนข้อความธรรมดา
  */
+const webhookURL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375066650495422464/ZLtLH6rKZtTwFje13E7BVl0-OT-jRJvlYj0uE0_Cw7uRN2YR6oJz1ZKfD2pmmZEVWI9Q';
 async function sendDiscord(message, embed = null) {
-  const webhookURL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375066650495422464/ZLtLH6rKZtTwFje13E7BVl0-OT-jRJvlYj0uE0_Cw7uRN2YR6oJz1ZKfD2pmmZEVWI9Q';
+  
   try {
     const body = embed ? { embeds: [embed] } : { content: message };
     const res = await fetch(webhookURL, {
