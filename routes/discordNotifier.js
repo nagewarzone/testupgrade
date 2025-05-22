@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');  // ต้องติดตั้งด้วย `npm install node-fetch@2`
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375138470422384650/P_AsrLHzoCMPplokk7XLWEU6ej0fRWlbppOeh9ZbmYzlcQiU6_oMPTFodtLoahxZZEJZ';
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375138473677426830/A1S9Xos1tozwo-TPTBIv7mO36MFNt_Ol1Vt_dlXjAsLJL16wIu6MZY3E8Yn1niJrktMK';
 
 // ฟังก์ชัน delay
 function delay(ms) {
