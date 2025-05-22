@@ -7,11 +7,15 @@ const fetch = require('node-fetch'); // ใช้ส่งข้อความ 
 
 const admin = require('firebase-admin');
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+
+// แปลง \n ใน private_key เป็น new line จริง
+firebaseConfig.private_key = firebaseConfig.private_key.replace(/\\n/g, '\n');
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(firebaseConfig),
 });
+
 
 
 const db = admin.firestore();
