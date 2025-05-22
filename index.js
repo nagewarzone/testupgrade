@@ -2,8 +2,6 @@ const express = require('express');
 const cors = require('cors');
 
 const path = require('path');
-const fetch = require('node-fetch'); // ใช้ส่งข้อความ Discord webhook
-
 
 const admin = require('firebase-admin');
 
@@ -16,11 +14,23 @@ admin.initializeApp({
   credential: admin.credential.cert(firebaseConfig),
 });
 
-
-
 const db = admin.firestore();
 const app = express();
 const port = 3000;
+const axios = require('axios');
+
+async function sendDiscord(content, embed = null) {
+  const payload = {
+    content: content || undefined,
+    embeds: embed ? [embed] : undefined
+  };
+
+  try {
+    await axios.post('https://discord.com/api/webhooks/1375066650495422464/ZLtLH6rKZtTwFje13E7BVl0-OT-jRJvlYj0uE0_Cw7uRN2YR6oJz1ZKfD2pmmZEVWI9Q', payload);
+  } catch (err) {
+    console.error('ไม่สามารถส่ง Discord ได้:', err);
+  }
+}
 
 app.use(cors());
 // ใช้ express built-in json parser แทน body-parser
@@ -28,32 +38,6 @@ app.use(express.json());
 
 // เสิร์ฟ static HTML, CSS, JS จากโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
-
-/**
- * ฟังก์ชันส่งข้อความแจ้งเตือนไปยัง Discord webhook
- * @param {string} message ข้อความที่จะส่ง
- * @param {object|null} embed (optional) ถ้ามี embed object จะส่งแทนข้อความธรรมดา
- */
-const webhookURL = process.env.DISCORD_WEBHOOK_URL
-async function sendDiscord(message, embed = null) {
-  
-  try {
-    const body = embed ? { embeds: [embed] } : { content: message };
-    const res = await fetch(webhookURL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-      console.error('ส่งข้อความ Discord ล้มเหลว:', res.status, await res.text());
-    } else {
-      console.log('ส่งข้อความ Discord สำเร็จ');
-    }
-  } catch (error) {
-    console.error('ส่งข้อความ Discord ล้มเหลว:', error);
-  }
-}
-
 
 // กำหนดรหัสผ่าน admin ไว้ที่นี่ (เปลี่ยนเป็นรหัสที่ปลอดภัยจริง)
 const ADMIN_PASSWORD = '7890';
@@ -125,129 +109,136 @@ app.post('/proxy', async (req, res) => {
       return res.json({ success: true, ...userData });
     }
 
-    // ใช้พ้อยท์แลก topgm (แจ้งเตือน Discord ด้วยชื่อผู้เล่น)
-  if (action === 'usepoint') {
-  if (typeof pointChange !== 'number' || typeof topgmChange !== 'number') {
-    return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
-  }
+    // ใช้พ้อยท์แลก topgm
+    if (action === 'usepoint') {
+      if (typeof pointChange !== 'number' || typeof topgmChange !== 'number') {
+        return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
+      }
 
-  const displayName = req.body.name || username;
+      const currentPoint = userData.point || 0;
+      const currentTopgm = userData.topgm || 0;
 
-  const currentPoint = userData.point || 0;
-  const currentTopgm = userData.topgm || 0;
+      const newPoint = currentPoint + pointChange;
+      const newTopgm = currentTopgm + topgmChange;
 
-  const newPoint = currentPoint + pointChange;
-  const newTopgm = currentTopgm + topgmChange;
+      if (newPoint < 0) {
+        return res.json({ success: false, message: 'POINT ไม่พอ' });
+      }
 
-  if (newPoint < 0) {
-    return res.json({ success: false, message: 'POINT ไม่พอ' });
-  }
+      if (newTopgm < 0) {
+        return res.json({ success: false, message: 'ไม่สามารถลบ topgm ได้มากกว่าที่มี' });
+      }
 
-  if (newTopgm < 0) {
-    return res.json({ success: false, message: 'ไม่สามารถลบ topgm ได้มากกว่าที่มี' });
-  }
+      await userRef.update({ point: newPoint, topgm: newTopgm });
 
-  await userRef.update({ point: newPoint, topgm: newTopgm });
+      return res.json({ success: true });
+    }
 
-  await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
-
-  return res.json({ success: true });
-}
-
-    // อัปเกรดไอเท็ม topgm เป็น warzone พร้อมแจ้งเตือน Discord
+    // อัปเกรดไอเท็ม topgm เป็น warzone
     if (action === 'upgrade') {
-  const itemName = 'topgm';
-  const hasItem = userData[itemName] || 0;
-  let currentToken = userData.token || 0;
-  let warzone = userData.warzone || 0;
-  let topgm = hasItem;
+      const itemName = 'topgm';
+      const hasItem = userData[itemName] || 0;
+      let currentToken = userData.token || 0;
+      let warzone = userData.warzone || 0;
+      let topgm = hasItem;
 
-  if (currentToken <= 0) {
-    return res.json({ success: false, message: 'คุณไม่มี PEMTO สำหรับอัปเกรด' });
-  }
-  if (topgm <= 0) {
-    return res.json({ success: false, message: 'คุณไม่มีไอเท็มสำหรับอัพเกรด' });
-  }
+      if (currentToken <= 0) {
+        return res.json({ success: false, message: 'คุณไม่มี PEMTO สำหรับอัปเกรด' });
+      }
+      if (topgm <= 0) {
+        return res.json({ success: false, message: 'คุณไม่มีไอเท็มสำหรับอัพเกรด' });
+      }
 
-  const rateDoc = await db.collection('upgraderates').doc(itemName).get();
-  if (!rateDoc.exists) return res.json({ success: false, message: 'ไม่มีข้อมูลอัตราอัพเกรด' });
+      const rateDoc = await db.collection('upgraderates').doc(itemName).get();
+      if (!rateDoc.exists) return res.json({ success: false, message: 'ไม่มีข้อมูลอัตราอัพเกรด' });
 
-  const { successRate, failRate, breakRate } = rateDoc.data();
-  if (
-    typeof successRate !== 'number' || typeof failRate !== 'number' || typeof breakRate !== 'number' ||
-    successRate < 0 || failRate < 0 || breakRate < 0 ||
-    successRate + failRate + breakRate > 1
-  ) {
-    return res.json({ success: false, message: 'ข้อมูลอัตราอัพเกรดไม่ถูกต้อง' });
-  }
+      const { successRate, failRate, breakRate } = rateDoc.data();
+      if (
+        typeof successRate !== 'number' || typeof failRate !== 'number' || typeof breakRate !== 'number' ||
+        successRate < 0 || failRate < 0 || breakRate < 0 ||
+        successRate + failRate + breakRate > 1
+      ) {
+        return res.json({ success: false, message: 'ข้อมูลอัตราอัพเกรดไม่ถูกต้อง' });
+      }
 
-  const roll = Math.random();
-  let result = '';
-  let logResult = '';
-  let resultMessage = '';
+      const roll = Math.random();
+      let result = '';
+      let logResult = '';
+      let resultMessage = '';
 
-  currentToken -= 1;
+      currentToken -= 1;
 
-  if (roll < successRate) {
+      if (roll < successRate) {
   result = 'success';
   topgm -= 1;
-  warzone += 1; // เพิ่ม warzone เมื่ออัปเกรดสำเร็จ
+  warzone += 1;
   logResult = `สำเร็จ`;
   resultMessage = `อัพเกรดสำเร็จ: Warzone`;
 
-  // ตัวอย่าง embed พร้อมรูปโล่
- const embed = { 
-  title: `🎉 ${name || username} ได้อัพเกรด สำเร็จ !`,
-  description: `ไอเท็มมีระดับสูงขึ้นเป็น "   Warzone S.GOD+7  "\u00A0!!`,
-  color: 0x00FF00, // สีเขียวสดใส
-  image: {
-    url: "https://img5.pic.in.th/file/secure-sv1/image_2025-05-21_025140493-removebg-preview.png"
-  },
-  footer: {
-    text: "ได้รับไอเท็ม Warzone S.GOD+7"
-  },
-  timestamp: new Date().toISOString()
-};
-
-
+  const embed = {
+    title: `🎉 ${name || username} ได้อัพเกรดสำเร็จ!`,
+    description: `ไอเท็มมีระดับสูงขึ้นเป็น **"Warzone S.GOD+7"** 🚀`,
+    color: 0x00FF00, // เขียว
+    image: {
+      url: "https://img5.pic.in.th/file/secure-sv1/image_2025-05-21_025140493-removebg-preview.png"
+    },
+    footer: { text: "ได้รับไอเท็ม Warzone S.GOD+7" },
+    timestamp: new Date().toISOString()
+  };
 
   await sendDiscord(null, embed);
-
 
 } else if (roll < successRate + failRate) {
   result = 'fail';
   logResult = `ล้มเหลว`;
   resultMessage = `อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)`;
-  await sendDiscord(`\u00A0\u00A0\u00A0\u00A0${name || username}\u00A0\u00A0 ⚠️\u00A0\u00A0 ได้อัพเกรด \u00A0\u00A0ปลอกTOPGM ล้มเหลว!\u00A0\ ขอให้โชคดีครั้งหน้า`);
+
+  const embed = {
+    title: `⚠️ ${name || username} อัพเกรดล้มเหลว`,
+    description: `การอัพเกรด **TOPGM** ไม่สำเร็จ\nแต่ไอเท็มยังปลอดภัยอยู่`,
+    color: 0xFFFF00, // เหลือง
+    footer: { text: "ยังคงมีไอเท็ม TOPGM" },
+    timestamp: new Date().toISOString()
+  };
+
+  await sendDiscord(null, embed);
+
 } else {
   result = 'broken';
   topgm -= 1;
   logResult = `แตก`;
   resultMessage = `อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)`;
-  await sendDiscord(`\u00A0\u00A0\u00A0\u00A0${name || username}\u00A0\u00A0 💥\u00A0\u00A0 ได้อัพเกรดล้มเหลว! \u00A0\u00A0ไอเท็ม \u00A0\u00A0ปลอกTOPGM\u00A0\u00A0 ถูกทำลาย`);
+
+  const embed = {
+    title: `💥 ${name || username} อัพเกรดล้มเหลว! ไอเท็มแตก`,
+    description: `การอัพเกรด **TOPGM** ล้มเหลวอย่างรุนแรง\n💀 ไอเท็มสูญหายถาวร`,
+    color: 0xFF0000, // แดง
+    footer: { text: "ไอเท็ม TOPGM ถูกทำลาย" },
+    timestamp: new Date().toISOString()
+  };
+
+  await sendDiscord(null, embed);
 }
 
 
+      if (topgm < 0) topgm = 0;
 
-  if (topgm < 0) topgm = 0;
+      await userRef.update({
+        token: currentToken,
+        warzone: warzone,
+        topgm: topgm
+      });
 
-  await userRef.update({
-    token: currentToken,
-    warzone: warzone,
-    topgm: topgm
-  });
+      await db.collection('logs').add({
+        Date: admin.firestore.FieldValue.serverTimestamp(),
+        Username: username,
+        Name: name || '',
+        Item: itemName,
+        Result: logResult
+      });
 
-  await db.collection('logs').add({
-    Date: admin.firestore.FieldValue.serverTimestamp(),
-    Username: username,
-    Name: name || '',
-    Item: itemName,
-    Result: logResult
-  });
-
-  return res.json({ success: true, result: logResult, resultMessage });
-}
-
+      return res.json({ success: true, result: logResult, resultMessage });
+    }
 
     return res.json({ success: false, message: 'Unknown action' });
   } catch (err) {
