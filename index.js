@@ -124,7 +124,7 @@ app.post('/proxy', async (req, res) => {
     return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
   }
 
-  const displayName = req.body.name || username; // fallback เผื่อไม่มี name
+  const displayName = req.body.name || username;
 
   const currentPoint = userData.point || 0;
   const currentTopgm = userData.topgm || 0;
@@ -142,12 +142,10 @@ app.post('/proxy', async (req, res) => {
 
   await userRef.update({ point: newPoint, topgm: newTopgm });
 
-  // ใช้ชื่อตัวละครในข้อความแจ้งเตือนแทน username
   await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
 
   return res.json({ success: true });
-
-
+}
 
     // อัปเกรดไอเท็ม topgm เป็น warzone พร้อมแจ้งเตือน Discord
     if (action === 'upgrade') {
