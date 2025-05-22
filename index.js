@@ -149,12 +149,10 @@ app.post('/proxy', async (req, res) => {
 
   await userRef.update({ point: newPoint, topgm: newTopgm });
 
-  // ส่งแจ้งเตือน Discord
   await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
 
   return res.json({ success: true });
 }
-
 
     // อัปเกรดไอเท็ม topgm เป็น warzone พร้อมแจ้งเตือน Discord
     if (action === 'upgrade') {
@@ -188,58 +186,57 @@ app.post('/proxy', async (req, res) => {
   let logResult = '';
   let resultMessage = '';
 
-  currentToken -= 1; // ใช้ token ไป 1 ชิ้นก่อน
+  currentToken -= 1;
 
   if (roll < successRate) {
-    // อัพเกรดสำเร็จ
-    result = 'success';
-    topgm -= 1;
-    warzone += 1;
-    logResult = 'สำเร็จ';
-    resultMessage = 'อัพเกรดสำเร็จ: Warzone';
+  result = 'success';
+  topgm -= 1;
+  warzone += 1; // เพิ่ม warzone เมื่ออัปเกรดสำเร็จ
+  logResult = `สำเร็จ`;
+  resultMessage = `อัพเกรดสำเร็จ: Warzone`;
 
-    // Embed message สำหรับ Discord
-    const embed = {
-      title: `🎉 ${(name || username)} ได้อัพเกรดสำเร็จ!`,
-      description: `ไอเท็มมีระดับสูงขึ้นเป็น "Warzone S.GOD+7"!!`,
-      color: 0x00FF00, // สีเขียว
-      image: {
-        url: "https://img5.pic.in.th/file/secure-sv1/image_2025-05-21_025140493-removebg-preview.png"
-      },
-      footer: {
-        text: "ได้รับไอเท็ม Warzone S.GOD+7"
-      },
-      timestamp: new Date().toISOString()
-    };
+  // ตัวอย่าง embed พร้อมรูปโล่
+ const embed = { 
+  title: `🎉 ${name || username} ได้อัพเกรด สำเร็จ !`,
+  description: `ไอเท็มมีระดับสูงขึ้นเป็น "   Warzone S.GOD+7  "\u00A0!!`,
+  color: 0x00FF00, // สีเขียวสดใส
+  image: {
+    url: "https://img5.pic.in.th/file/secure-sv1/image_2025-05-21_025140493-removebg-preview.png"
+  },
+  footer: {
+    text: "ได้รับไอเท็ม Warzone S.GOD+7"
+  },
+  timestamp: new Date().toISOString()
+};
 
-    await sendDiscord(null, embed);
 
-  } else if (roll < successRate + failRate) {
-    // อัพเกรดล้มเหลวแต่ไอเท็มไม่หาย
-    result = 'fail';
-    logResult = 'ล้มเหลว';
-    resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
-    await sendDiscord(`⚠️ ${(name || username)} ได้อัพเกรดปลอก TOPGM ล้มเหลว! ขอให้โชคดีครั้งหน้า`);
 
-  } else {
-    // ไอเท็มแตก หายไปเลย
-    result = 'broken';
-    topgm -= 1;
-    logResult = 'แตก';
-    resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
-    await sendDiscord(`💥 ${(name || username)} ได้อัพเกรดล้มเหลว! ไอเท็มปลอก TOPGM ถูกทำลาย`);
-  }
+  await sendDiscord(null, embed);
+
+
+} else if (roll < successRate + failRate) {
+  result = 'fail';
+  logResult = `ล้มเหลว`;
+  resultMessage = `อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)`;
+  await sendDiscord(`\u00A0\u00A0\u00A0\u00A0${name || username}\u00A0\u00A0 ⚠️\u00A0\u00A0 ได้อัพเกรด \u00A0\u00A0ปลอกTOPGM ล้มเหลว!\u00A0\ ขอให้โชคดีครั้งหน้า`);
+} else {
+  result = 'broken';
+  topgm -= 1;
+  logResult = `แตก`;
+  resultMessage = `อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)`;
+  await sendDiscord(`\u00A0\u00A0\u00A0\u00A0${name || username}\u00A0\u00A0 💥\u00A0\u00A0 ได้อัพเกรดล้มเหลว! \u00A0\u00A0ไอเท็ม \u00A0\u00A0ปลอกTOPGM\u00A0\u00A0 ถูกทำลาย`);
+}
+
+
 
   if (topgm < 0) topgm = 0;
 
-  // อัพเดตข้อมูลผู้ใช้
   await userRef.update({
     token: currentToken,
     warzone: warzone,
     topgm: topgm
   });
 
-  // บันทึก log
   await db.collection('logs').add({
     Date: admin.firestore.FieldValue.serverTimestamp(),
     Username: username,
@@ -251,9 +248,13 @@ app.post('/proxy', async (req, res) => {
   return res.json({ success: true, result: logResult, resultMessage });
 }
 
-// ถ้า action อื่น
-return res.json({ success: false, message: 'Unknown action' });
 
+    return res.json({ success: false, message: 'Unknown action' });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false, message: 'Server Error' });
+  }
+});
 
 // API ดึงอัตราอัปเกรดทั้งหมด (public)
 app.get('/getUpgradeRates', async (req, res) => {
