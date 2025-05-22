@@ -19,7 +19,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const fetch = require('node-fetch'); // ต้องติดตั้ง node-fetch
 
 const webhookURL = process.env.DISCORD_WEBHOOK_URL;
 async function sendDiscord(message, embed = null) {
