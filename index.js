@@ -2,14 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const admin = require('firebase-admin');
-const { sendDiscord } = require('./routes/discordNotifier');
+// const { sendDiscord } = require('./routes/discordNotifier'); // ลบออก
 const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
 firebaseConfig.private_key = firebaseConfig.private_key.replace(/\\n/g, '\n');
 
 admin.initializeApp({
     credential: admin.credential.cert(firebaseConfig),
 });
-sendDiscord('📢 ทดสอบการแจ้งเตือน Discord สำเร็จ!');
+// sendDiscord('📢 ทดสอบการแจ้งเตือน Discord สำเร็จ!'); // ลบออก
 const db = admin.firestore();
 const app = express();
 const port = 3000;
@@ -115,31 +115,28 @@ app.post('/proxy', async (req, res) => {
             let logResult, resultMessage;
             token -= 1;
 
-            // ตัวอย่างใน action 'upgrade'
-if (roll < successRate) {
-    // อัพเกรดสำเร็จ
-    topgm -= 1;
-    warzone += 1;
-    logResult = 'สำเร็จ';
-    resultMessage = 'อัพเกรดสำเร็จ: Warzone';
+            if (roll < successRate) {
+                // อัพเกรดสำเร็จ
+                topgm -= 1;
+                warzone += 1;
+                logResult = 'สำเร็จ';
+                resultMessage = 'อัพเกรดสำเร็จ: Warzone';
 
-    // ส่ง Discord
-    sendDiscord(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} สำเร็จ!`);
-} else if (roll < successRate + failRate) {
-    // ล้มเหลว
-    logResult = 'ล้มเหลว';
-    resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
+                // ลบ sendDiscord ออก
+            } else if (roll < successRate + failRate) {
+                // ล้มเหลว
+                logResult = 'ล้มเหลว';
+                resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
 
-    sendDiscord(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} ล้มเหลว (ไม่เสียไอเท็ม)`);
-} else {
-    // แตก
-    topgm -= 1;
-    logResult = 'แตก';
-    resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
+                // ลบ sendDiscord ออก
+            } else {
+                // แตก
+                topgm -= 1;
+                logResult = 'แตก';
+                resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
 
-    sendDiscord(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} แตก! ไอเท็มหาย`);
-}
-
+                // ลบ sendDiscord ออก
+            }
 
             if (topgm < 0) topgm = 0;
 
