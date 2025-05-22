@@ -119,42 +119,46 @@ app.post('/proxy', async (req, res) => {
     }
 
     // ใช้พ้อยท์แลก topgm (แจ้งเตือน Discord ด้วยชื่อผู้เล่น)
-   if (action === 'usepoint') {
-  const pointChange = req.body.pointChange;
-  const topgmChange = req.body.topgmChange;
-  const displayName = req.body.name || username;
+  if (action === 'usepoint') {
+  try {
+    const pointChange = req.body.pointChange;
+    const topgmChange = req.body.topgmChange;
+    const displayName = req.body.name || username;
 
-  if (typeof pointChange !== 'number' || typeof topgmChange !== 'number') {
-    return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
+    if (typeof pointChange !== 'number' || typeof topgmChange !== 'number') {
+      return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
+    }
+
+    const currentPoint = userData.point || 0;
+    const currentTopgm = userData.topgm || 0;
+
+    const newPoint = currentPoint + pointChange;
+    const newTopgm = currentTopgm + topgmChange;
+
+    if (newPoint < 0) {
+      return res.json({ success: false, message: 'POINT ไม่พอ' });
+    }
+
+    if (newTopgm < 0) {
+      return res.json({ success: false, message: 'ไม่สามารถลบ TOPGM ได้มากกว่าที่มี' });
+    }
+
+    await userRef.update({
+      point: newPoint,
+      topgm: newTopgm
+    });
+
+    // ส่ง Discord message หลังอัปเดตสำเร็จ
+    await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
+
+    return res.json({ success: true, message: 'อัปเดต POINT และ TOPGM สำเร็จ' });
+
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการใช้พ้อยท์แลก TOPGM:', error);
+    return res.json({ success: false, message: 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์' });
   }
-
-  const currentPoint = userData.point || 0;
-  const currentTopgm = userData.topgm || 0;
-
-  const newPoint = currentPoint + pointChange;
-  const newTopgm = currentTopgm + topgmChange;
-
-  if (newPoint < 0) {
-    return res.json({ success: false, message: 'POINT ไม่พอ' });
-  }
-
-  if (newTopgm < 0) {
-    return res.json({ success: false, message: 'ไม่สามารถลบ TOPGM ได้มากกว่าที่มี' });
-  }
-
-  await userRef.update({
-    point: newPoint,
-    topgm: newTopgm
-  });
-
-  return res.json({ success: true, message: 'อัปเดต POINT และ TOPGM สำเร็จ' });
 }
 
-  // ใช้ชื่อตัวละครในข้อความแจ้งเตือนแทน username
-  await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
-
-  return res.json({ success: true });
-}
 
 
     // อัปเกรดไอเท็ม topgm เป็น warzone พร้อมแจ้งเตือน Discord
