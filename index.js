@@ -186,6 +186,7 @@ app.post('/proxy', async (req, res) => {
   if (roll < successRate) {
   result = 'success';
   topgm -= 1;
+  warzone += 1; // เพิ่ม warzone เมื่ออัปเกรดสำเร็จ
   logResult = `สำเร็จ`;
   resultMessage = `อัพเกรดสำเร็จ: Warzone`;
 
