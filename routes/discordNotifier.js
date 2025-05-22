@@ -2,7 +2,7 @@ const fetch = require('node-fetch');  // ต้องติดตั้งด้
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375109993766060163/hiyekifjjMItAEjaVv5xgrOmQg1nyyNdwQ0UJmE2wA_I3qQ6K3abWJcagz5kCiB4bxtw';
 
-async function sendDiscordMessage(content) {
+async function sendDiscord(content) {
   if (!DISCORD_WEBHOOK_URL) {
     console.warn('Discord webhook URL not configured.');
     return;
@@ -22,4 +22,4 @@ async function sendDiscordMessage(content) {
   }
 }
 
-module.exports = { sendDiscordMessage };
+module.exports = { sendDiscord };
