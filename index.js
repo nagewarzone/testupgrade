@@ -1,9 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fetch = require('node-fetch');
 const admin = require('firebase-admin');
-
+const { sendDiscordMessage } = require('./discordNotifier');
 const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
 firebaseConfig.private_key = firebaseConfig.private_key.replace(/\\n/g, '\n');
 
@@ -18,29 +17,6 @@ const port = 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-
-const webhookURL = process.env.DISCORD_WEBHOOK_URL;
-async function sendDiscord(message, embed = null) {
-    try {
-        const body = embed ? { embeds: [embed] } : { content: message };
-        const res = await fetch(webhookURL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error('ส่งข้อความ Discord ล้มเหลว:', res.status, text);
-        } else {
-            console.log('ส่งข้อความ Discord สำเร็จ');
-        }
-    } catch (error) {
-        console.error('ส่งข้อความ Discord ล้มเหลว:', error);
-    }
-}
-
 
 const ADMIN_PASSWORD = '7890';
 function adminAuth(req, res, next) {
@@ -115,7 +91,7 @@ app.post('/proxy', async (req, res) => {
 
             await userRef.update({ point: newPoint, topgm: newTopgm });
 
-            await sendDiscord(`${displayName} แลก ${Math.abs(pointChange)} พ้อยท์ ได้รับไอเท็ม TOPGM จำนวน ${Math.abs(topgmChange)} ชิ้น`);
+            // ลบการเรียก sendDiscord ออก
             return res.json({ success: true });
         }
 
@@ -139,35 +115,31 @@ app.post('/proxy', async (req, res) => {
             let logResult, resultMessage;
             token -= 1;
 
-            if (roll < successRate) {
-                topgm -= 1;
-                warzone += 1;
-                logResult = 'สำเร็จ';
-                resultMessage = 'อัพเกรดสำเร็จ: Warzone';
+            // ตัวอย่างใน action 'upgrade'
+if (roll < successRate) {
+    // อัพเกรดสำเร็จ
+    topgm -= 1;
+    warzone += 1;
+    logResult = 'สำเร็จ';
+    resultMessage = 'อัพเกรดสำเร็จ: Warzone';
 
-                const embed = {
-                    title: `🎉 ${(name || username)} ได้อัพเกรดสำเร็จ!`,
-                    description: `ไอเท็มมีระดับสูงขึ้นเป็น "Warzone S.GOD+7"!!`,
-                    color: 0x00FF00,
-                    image: {
-                        url: "https://img5.pic.in.th/file/secure-sv1/image_2025-05-21_025140493-removebg-preview.png"
-                    },
-                    footer: {
-                        text: "ได้รับไอเท็ม Warzone S.GOD+7"
-                    },
-                    timestamp: new Date().toISOString()
-                };
-                await sendDiscord(null, embed);
-            } else if (roll < successRate + failRate) {
-                logResult = 'ล้มเหลว';
-                resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
-                await sendDiscord(`⚠️ ${(name || username)} ได้อัพเกรดปลอก TOPGM ล้มเหลว! ขอให้โชคดีครั้งหน้า`);
-            } else {
-                topgm -= 1;
-                logResult = 'แตก';
-                resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
-                await sendDiscord(`💥 ${(name || username)} ได้อัพเกรดล้มเหลว! ไอเท็มปลอก TOPGM ถูกทำลาย`);
-            }
+    // ส่ง Discord
+    sendDiscordMessage(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} สำเร็จ!`);
+} else if (roll < successRate + failRate) {
+    // ล้มเหลว
+    logResult = 'ล้มเหลว';
+    resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
+
+    sendDiscordMessage(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} ล้มเหลว (ไม่เสียไอเท็ม)`);
+} else {
+    // แตก
+    topgm -= 1;
+    logResult = 'แตก';
+    resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
+
+    sendDiscordMessage(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} แตก! ไอเท็มหาย`);
+}
+
 
             if (topgm < 0) topgm = 0;
 
