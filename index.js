@@ -35,18 +35,24 @@ app.use(express.static(path.join(__dirname, 'public')));
  * @param {object|null} embed (optional) ถ้ามี embed object จะส่งแทนข้อความธรรมดา
  */
 async function sendDiscord(message, embed = null) {
-  const webhookURL = 'https://discord.com/api/webhooks/1375066650495422464/ZLtLH6rKZtTwFje13E7BVl0-OT-jRJvlYj0uE0_Cw7uRN2YR6oJz1ZKfD2pmmZEVWI9Q';
+  const webhookURL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/your-webhook-url';
   try {
     const body = embed ? { embeds: [embed] } : { content: message };
-    await fetch(webhookURL, {
+    const res = await fetch(webhookURL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
+    if (!res.ok) {
+      console.error('ส่งข้อความ Discord ล้มเหลว:', res.status, await res.text());
+    } else {
+      console.log('ส่งข้อความ Discord สำเร็จ');
+    }
   } catch (error) {
     console.error('ส่งข้อความ Discord ล้มเหลว:', error);
   }
 }
+
 
 // กำหนดรหัสผ่าน admin ไว้ที่นี่ (เปลี่ยนเป็นรหัสที่ปลอดภัยจริง)
 const ADMIN_PASSWORD = '7890';
