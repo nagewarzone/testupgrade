@@ -36,6 +36,7 @@ app.use(express.static(path.join(__dirname, 'public')));
  */
 const webhookURL = process.env.DISCORD_WEBHOOK_URL
 async function sendDiscord(message, embed = null) {
+  
   try {
     const body = embed ? { embeds: [embed] } : { content: message };
     const res = await fetch(webhookURL, {
@@ -43,15 +44,6 @@ async function sendDiscord(message, embed = null) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-
-    if (res.status === 429) {
-      const retryAfter = res.headers.get('retry-after');
-      const waitTime = (retryAfter ? parseInt(retryAfter) : 1) * 1000;
-      console.warn(`Rate limited by Discord. Waiting ${waitTime}ms before retrying...`);
-      await new Promise(r => setTimeout(r, waitTime));
-      return sendDiscord(message, embed);  // Retry ส่งใหม่หลังรอ
-    }
-
     if (!res.ok) {
       console.error('ส่งข้อความ Discord ล้มเหลว:', res.status, await res.text());
     } else {
