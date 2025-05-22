@@ -124,20 +124,20 @@ if (roll < successRate) {
     resultMessage = 'อัพเกรดสำเร็จ: Warzone';
 
     // ส่ง Discord
-    sendDiscordMessage(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} สำเร็จ!`);
+    sendDiscord(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} สำเร็จ!`);
 } else if (roll < successRate + failRate) {
     // ล้มเหลว
     logResult = 'ล้มเหลว';
     resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
 
-    sendDiscordMessage(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} ล้มเหลว (ไม่เสียไอเท็ม)`);
+    sendDiscord(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} ล้มเหลว (ไม่เสียไอเท็ม)`);
 } else {
     // แตก
     topgm -= 1;
     logResult = 'แตก';
     resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
 
-    sendDiscordMessage(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} แตก! ไอเท็มหาย`);
+    sendDiscord(`ผู้ใช้ ${username} อัพเกรดไอเท็ม ${itemName} แตก! ไอเท็มหาย`);
 }
 
 
