@@ -187,18 +187,20 @@ app.get('/admin/getLogs', async (req, res) => {
       const data = doc.data();
       const log = {
         id: doc.id,
-        Date: data.Date ? data.Date.toDate().toISOString() : null,
-        Item: data.Item || '',
-        Name: data.Name || '',
-        Result: data.Result || '',
-        Username: data.Username || ''
+        date: (data.Date instanceof admin.firestore.Timestamp)
+          ? data.Date.toDate().toISOString()
+          : data.Date || '',
+        item: data.Item || '',
+        name: data.Name || '',
+        result: data.Result || '',
+        username: data.Username || ''
       };
 
       if (!search ||
-          log.Item.toLowerCase().includes(search) ||
-          log.Name.toLowerCase().includes(search) ||
-          log.Result.toLowerCase().includes(search) ||
-          log.Username.toLowerCase().includes(search)) {
+          log.item.toLowerCase().includes(search) ||
+          log.name.toLowerCase().includes(search) ||
+          log.result.toLowerCase().includes(search) ||
+          log.username.toLowerCase().includes(search)) {
         logs.push(log);
       }
     });
