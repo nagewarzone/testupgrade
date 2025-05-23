@@ -81,6 +81,11 @@ app.post('/proxy', async (req, res) => {
     const username = req.body.username;
     const userRef = db.collection('users').doc(username);
     const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+        return res.json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+    }
+
     const userData = userSnap.data();
 
     const currentPoint = userData.point || 0;
@@ -100,10 +105,12 @@ app.post('/proxy', async (req, res) => {
     }
 
     const lastBrokenLog = logSnap.docs[0].data();
-    const lastBrokenTime = lastBrokenLog.Date;
+    const lastBrokenTime = lastBrokenLog.Date; // Firestore Timestamp
 
-    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
-    if (userData.lastUsedBrokenLogTimestamp === lastBrokenTime) {
+    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง (เช็คด้วย .isEqual())
+    if (userData.lastUsedBrokenLogTimestamp &&
+        userData.lastUsedBrokenLogTimestamp.isEqual &&
+        userData.lastUsedBrokenLogTimestamp.isEqual(lastBrokenTime)) {
         return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
     }
 
@@ -112,7 +119,7 @@ app.post('/proxy', async (req, res) => {
         return res.json({ success: false, message: 'POINT ไม่พอ' });
     }
 
-    // อนุญาตให้ดึง
+    // อนุญาตให้ดึง (อัพเดต user data พร้อมเก็บ timestamp)
     await userRef.update({
         point: currentPoint - 1,
         topgm: currentTopgm + 1,
@@ -121,6 +128,7 @@ app.post('/proxy', async (req, res) => {
 
     return res.json({ success: true, message: 'ดึงไอเท็ม topgm กลับมาแล้ว' });
 }
+
 
         if (action === 'upgrade') {
             const itemName = 'topgm';
