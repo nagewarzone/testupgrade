@@ -163,7 +163,7 @@ app.post('/proxy', async (req, res) => {
 
 // --------------------- Public & Admin APIs ---------------------
 
-app.get('/getUpgradeRates', async (req, res) => {
+app.get('/admin/getUpgradeRates', async (req, res) => {
     try {
         const snapshot = await db.collection('upgraderates').get();
         const rates = {};
@@ -175,7 +175,7 @@ app.get('/getUpgradeRates', async (req, res) => {
     }
 });
 
-app.get('/getLogs', async (req, res) => {
+app.get('/admin/getLogs', async (req, res) => {
   try {
     const snapshot = await db.collection('logs').orderBy('Date', 'desc').limit(100).get();
     const logs = [];
