@@ -188,24 +188,52 @@ app.get('/getLogs', async (req, res) => {
 });
 
 app.get('/admin/getUsers', adminAuth, async (req, res) => {
-    try {
-        const search = (req.query.search || '').toLowerCase();
-        const usersSnapshot = await db.collection('users').get();
-        const users = [];
+  try {
+    const search = (req.query.search || '').toLowerCase();
 
-        usersSnapshot.forEach(doc => {
-            const username = doc.id.toLowerCase();
-            if (!search || username.includes(search)) {
-                users.push({ username: doc.id, ...doc.data() });
-            }
-        });
+    let usersQuery = db.collection('users').orderBy('__name__').limit(100);
 
-        res.json({ success: true, users });
-    } catch (err) {
-        console.error(err);
-        res.json({ success: false, message: 'Server Error' });
-    }
+    const usersSnapshot = await usersQuery.get();
+    const users = [];
+
+    usersSnapshot.forEach(doc => {
+      const username = doc.id.toLowerCase();
+      if (!search || username.includes(search)) {
+        users.push({ username: doc.id, ...doc.data() });
+      }
+    });
+
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Server Error' });
+  }
 });
+app.post('/admin/deleteLogs', adminAuth, async (req, res) => {
+  try {
+    const { logIds } = req.body;
+
+    if (!Array.isArray(logIds) || logIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'ต้องส่ง logIds เป็น array และไม่ว่าง' });
+    }
+
+    const batch = db.batch();
+    const logsCollection = db.collection('logs');
+
+    logIds.forEach(id => {
+      const docRef = logsCollection.doc(id);
+      batch.delete(docRef);
+    });
+
+    await batch.commit();
+
+    res.json({ success: true, message: `${logIds.length} logs ถูกลบเรียบร้อย` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการลบ logs' });
+  }
+});
+
 
 app.post('/admin/updateUpgradeRate', adminAuth, async (req, res) => {
     try {
