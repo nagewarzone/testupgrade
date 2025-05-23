@@ -177,20 +177,30 @@ app.get('/admin/getUpgradeRates', async (req, res) => {
 
 app.get('/admin/getLogs', async (req, res) => {
   try {
-    const snapshot = await db.collection('logs').orderBy('Date', 'desc').limit(100).get();
+    const search = (req.query.search || '').toLowerCase();
+    const limit = parseInt(req.query.limit) || 100;
+
+    const snapshot = await db.collection('logs').orderBy('Date', 'desc').limit(limit).get();
     const logs = [];
 
     snapshot.forEach(doc => {
       const data = doc.data();
-
-      logs.push({
+      const log = {
         id: doc.id,
         Date: data.Date ? data.Date.toDate().toISOString() : null,
         Item: data.Item || '',
         Name: data.Name || '',
         Result: data.Result || '',
         Username: data.Username || ''
-      });
+      };
+
+      if (!search ||
+          log.Item.toLowerCase().includes(search) ||
+          log.Name.toLowerCase().includes(search) ||
+          log.Result.toLowerCase().includes(search) ||
+          log.Username.toLowerCase().includes(search)) {
+        logs.push(log);
+      }
     });
 
     res.json({ success: true, logs });
