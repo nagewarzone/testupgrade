@@ -77,23 +77,50 @@ app.post('/proxy', async (req, res) => {
             return res.json({ success: true, ...userData });
         }
 
-        if (action === 'usepoint') {
-            if (typeof pointChange !== 'number' || typeof topgmChange !== 'number') {
-                return res.json({ success: false, message: 'Invalid pointChange or topgmChange' });
-            }
+       if (action === 'usepoint') {
+    const username = req.body.username;
+    const userRef = db.collection('users').doc(username);
+    const userSnap = await userRef.get();
+    const userData = userSnap.data();
 
-            const displayName = name || username;
-            const newPoint = (userData.point || 0) + pointChange;
-            const newTopgm = (userData.topgm || 0) + topgmChange;
+    const currentPoint = userData.point || 0;
+    const currentTopgm = userData.topgm || 0;
 
-            if (newPoint < 0) return res.json({ success: false, message: 'POINT ไม่พอ' });
-            if (newTopgm < 0) return res.json({ success: false, message: 'ไม่สามารถลบ topgm ได้มากกว่าที่มี' });
+    // เช็ค log ล่าสุดของ user สำหรับไอเท็ม topgm ที่ Result === 'แตก'
+    const logSnap = await db.collection('logs')
+        .where('Username', '==', username)
+        .where('Item', '==', 'topgm')
+        .where('Result', '==', 'แตก')
+        .orderBy('Date', 'desc')
+        .limit(1)
+        .get();
 
-            await userRef.update({ point: newPoint, topgm: newTopgm });
+    if (logSnap.empty) {
+        return res.json({ success: false, message: 'ยังไม่มีการแตกของ topgm' });
+    }
 
-            // ลบการเรียก sendDiscord ออก
-            return res.json({ success: true });
-        }
+    const lastBrokenLog = logSnap.docs[0].data();
+    const lastBrokenTime = lastBrokenLog.Date;
+
+    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
+    if (userData.lastUsedBrokenLogTimestamp === lastBrokenTime) {
+        return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
+    }
+
+    // ตรวจสอบ point
+    if (currentPoint < 1) {
+        return res.json({ success: false, message: 'POINT ไม่พอ' });
+    }
+
+    // อนุญาตให้ดึง
+    await userRef.update({
+        point: currentPoint - 1,
+        topgm: currentTopgm + 1,
+        lastUsedBrokenLogTimestamp: lastBrokenTime
+    });
+
+    return res.json({ success: true, message: 'ดึงไอเท็ม topgm กลับมาแล้ว' });
+}
 
         if (action === 'upgrade') {
             const itemName = 'topgm';
