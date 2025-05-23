@@ -176,15 +176,28 @@ app.get('/getUpgradeRates', async (req, res) => {
 });
 
 app.get('/getLogs', async (req, res) => {
-    try {
-        const snapshot = await db.collection('logs').orderBy('Date', 'desc').limit(100).get();
-        const logs = [];
-        snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
-        res.json({ success: true, logs });
-    } catch (err) {
-        console.error(err);
-        res.json({ success: false, message: 'Server Error' });
-    }
+  try {
+    const snapshot = await db.collection('logs').orderBy('Date', 'desc').limit(100).get();
+    const logs = [];
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+
+      logs.push({
+        id: doc.id,
+        Date: data.Date ? data.Date.toDate().toISOString() : null,
+        Item: data.Item || '',
+        Name: data.Name || '',
+        Result: data.Result || '',
+        Username: data.Username || ''
+      });
+    });
+
+    res.json({ success: true, logs });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, message: 'Server Error' });
+  }
 });
 
 app.get('/admin/getUsers', adminAuth, async (req, res) => {
