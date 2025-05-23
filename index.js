@@ -189,9 +189,17 @@ app.get('/getLogs', async (req, res) => {
 
 app.get('/admin/getUsers', adminAuth, async (req, res) => {
     try {
+        const search = (req.query.search || '').toLowerCase();
         const usersSnapshot = await db.collection('users').get();
         const users = [];
-        usersSnapshot.forEach(doc => users.push({ username: doc.id, ...doc.data() }));
+
+        usersSnapshot.forEach(doc => {
+            const username = doc.id.toLowerCase();
+            if (!search || username.includes(search)) {
+                users.push({ username: doc.id, ...doc.data() });
+            }
+        });
+
         res.json({ success: true, users });
     } catch (err) {
         console.error(err);
