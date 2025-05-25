@@ -50,7 +50,7 @@ app.post('/admin/login', (req, res) => {
 });
 
 app.post('/proxy', async (req, res) => {
-    const { action, username, password, name, pointChange, topgmChange } = req.body;
+    const { action, username, password, name, pointChange, topgmChange, tokenChange } = req.body;
     if (!action) return res.json({ success: false, message: 'Missing action' });
 
     try {
@@ -63,7 +63,7 @@ app.post('/proxy', async (req, res) => {
 
             await userRef.set({
                 password,
-                token: 0,
+                pemto: 0,
                 topgm: 0,
                 warzone: 0,
                 point: 0
@@ -99,7 +99,7 @@ if (action === 'buypemto') {
     // ตัดพ้อยท์และเพิ่ม pemto
     await userRef.update({
         point: currentPoint - 200,
-        topgm: currentPemto + 1
+        pemto: currentPemto + 1
     });
 
     return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 TopGM', newPoint: currentPoint - 200 });
