@@ -63,7 +63,7 @@ app.post('/proxy', async (req, res) => {
 
             await userRef.set({
                 password,
-                pemto: 0,
+                token: 0,
                 topgm: 0,
                 warzone: 0,
                 point: 0
@@ -90,7 +90,7 @@ if (action === 'buypemto') {
     const userData = userSnap.data();
 
     const currentPoint = userData.point || 0;
-    const currentPemto = userData.topgm || 0;
+    const currentTokem = userData.topgm || 0;
 
     if (currentPoint < 200) {
         return res.json({ success: false, message: 'พ้อยท์ไม่เพียงพอ (ต้องมีอย่างน้อย 200)' });
@@ -99,7 +99,7 @@ if (action === 'buypemto') {
     // ตัดพ้อยท์และเพิ่ม pemto
     await userRef.update({
         point: currentPoint - 200,
-        pemto: currentPemto + 1
+        token: currenToken + 1
     });
 
     return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 TopGM', newPoint: currentPoint - 200 });
