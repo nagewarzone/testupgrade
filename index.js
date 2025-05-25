@@ -107,26 +107,26 @@ app.post('/proxy', async (req, res) => {
     const lastBrokenLog = logSnap.docs[0].data();
     const lastBrokenTime = lastBrokenLog.Date; // Firestore Timestamp
 
-    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง (เช็คด้วย .isEqual())
+    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
     if (userData.lastUsedBrokenLogTimestamp &&
         userData.lastUsedBrokenLogTimestamp.isEqual &&
         userData.lastUsedBrokenLogTimestamp.isEqual(lastBrokenTime)) {
         return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
     }
 
-    // ตรวจสอบ point
-    if (currentPoint < 1) {
-        return res.json({ success: false, message: 'POINT ไม่พอ' });
+    // เปลี่ยนเป็นเช็คว่า point ต้องมีอย่างน้อย 50
+    if (currentPoint < 50) {
+        return res.json({ success: false, message: 'POINT ไม่เพียงพอ (ต้องมีอย่างน้อย 50)' });
     }
 
-    // อนุญาตให้ดึง (อัพเดต user data พร้อมเก็บ timestamp)
+    // หัก 50 point และเพิ่ม topgm 1 พร้อมเก็บ timestamp
     await userRef.update({
-        point: currentPoint - 1,
+        point: currentPoint - 50,
         topgm: currentTopgm + 1,
         lastUsedBrokenLogTimestamp: lastBrokenTime
     });
 
-    return res.json({ success: true, message: 'ดึงไอเท็ม topgm กลับมาแล้ว' });
+    return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง topgm กลับมาแล้ว' });
 }
 
 
@@ -195,6 +195,32 @@ app.post('/proxy', async (req, res) => {
         return res.json({ success: false, message: 'Server Error' });
     }
 });
+if (action === 'buypemto') {
+    const username = req.body.username;
+    const userRef = db.collection('users').doc(username);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+        return res.json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+    }
+
+    const userData = userSnap.data();
+
+    const currentPoint = userData.point || 0;
+    const currentPemto = userData.topgm || 0;
+
+    if (currentPoint < 200) {
+        return res.json({ success: false, message: 'พ้อยท์ไม่เพียงพอ (ต้องมีอย่างน้อย 200)' });
+    }
+
+    // ตัดพ้อยท์และเพิ่ม pemto
+    await userRef.update({
+        point: currentPoint - 200,
+        topgm: currentPemto + 1
+    });
+
+    return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 TopGM', newPoint: currentPoint - 200 });
+}
 
 // --------------------- Public & Admin APIs ---------------------
 
