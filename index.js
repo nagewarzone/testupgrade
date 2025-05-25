@@ -90,7 +90,7 @@ if (action === 'buypemto') {
     const userData = userSnap.data();
 
     const currentPoint = userData.point || 0;
-    const currentToken = userData.pemto || 0;
+    const currentToken = userData.token || 0;
 
     if (currentPoint < 200) {
         return res.json({ success: false, message: 'พ้อยท์ไม่เพียงพอ (ต้องมีอย่างน้อย 200)' });
