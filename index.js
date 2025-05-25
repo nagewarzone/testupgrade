@@ -207,7 +207,7 @@ if (action === 'buypemto') {
     const userData = userSnap.data();
 
     const currentPoint = userData.point || 0;
-    const currentPemto = userData.topgm || 0;
+    const currentPemto = userData.pemto || 0;
 
     if (currentPoint < 200) {
         return res.json({ success: false, message: 'พ้อยท์ไม่เพียงพอ (ต้องมีอย่างน้อย 200)' });
@@ -216,10 +216,10 @@ if (action === 'buypemto') {
     // ตัดพ้อยท์และเพิ่ม pemto
     await userRef.update({
         point: currentPoint - 200,
-        topgm: currentPemto + 1
+        pemto: currentPemto + 1
     });
 
-    return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 TopGM', newPoint: currentPoint - 200 });
+    return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 Pemto', newPoint: currentPoint - 200 });
 }
 
 // --------------------- Public & Admin APIs ---------------------
