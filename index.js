@@ -18,7 +18,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const ADMIN_PASSWORD = '7890';
+// กรณีใช้ dotenv ต้อง require ก่อน (ถ้ายังไม่ได้ทำ)
+require('dotenv').config();
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'defaultPasswordIfNotSet';
+
 function adminAuth(req, res, next) {
     const adminPass = req.headers['x-admin-password'];
     if (!adminPass || adminPass !== ADMIN_PASSWORD) {
