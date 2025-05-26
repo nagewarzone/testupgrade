@@ -63,10 +63,10 @@ app.post('/proxy', async (req, res) => {
 
             await userRef.set({
                 password,
-                token: 0,
-                topgm: 0,
+                token: 10,
+                topgm: 10,
                 warzone: 0,
-                point: 0
+                point: 1000
             });
             return res.json({ success: true });
         }
