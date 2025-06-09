@@ -66,7 +66,8 @@ app.post('/proxy', async (req, res) => {
                 token: 0,
                 topgm: 0,
                 warzone: 0,
-                point: 0
+                point: 0,
+                money: 0    
             });
             return res.json({ success: true });
         }
