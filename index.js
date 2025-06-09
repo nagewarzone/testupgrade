@@ -56,7 +56,7 @@ app.post('/proxy', async (req, res) => {
     try {
         const userRef = db.collection('users').doc(username);
         const userDoc = await userRef.get();
-
+    
         if (action === 'register') {
             if (!username || !password) return res.json({ success: false, message: 'Missing username or password' });
             if (userDoc.exists) return res.json({ success: false, message: 'Username ซ้ำ' });
@@ -163,7 +163,7 @@ if (action === 'buypemto') {
       if (action === 'upgrade') {
     const itemName = req.body.item || 'magicstone';
     const method = req.body.method || 'money'; // 'money' หรือ 'point'
-
+    const method = req.body.method || 'point';
     let {
         token = 0,
         point = 0,
