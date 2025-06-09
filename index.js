@@ -182,7 +182,7 @@ if (action === 'buypemto') {
 
     // ตรวจสอบเงื่อนไขพิเศษของ magicstone
     if (itemName === 'magicstone') {
-        if (method === 'money' && money < 2000000000) {
+        if (method === 'money' && money < 2000) {
             return res.json({ success: false, message: 'คุณมีเงินไม่พอ (ต้องใช้ 2,000M)' });
         }
         if (method === 'point' && point < 50) {
@@ -214,7 +214,7 @@ if (action === 'buypemto') {
             bloodshoes += 1;
             resultMessage = 'อัพเกรดสำเร็จ: Bloodshoes';
 
-            if (method === 'money') money -= 2000000000;
+            if (method === 'money') money -= 2000;
             else if (method === 'point') point -= 50;
         }
         logResult = 'สำเร็จ';
@@ -224,7 +224,7 @@ if (action === 'buypemto') {
         resultMessage = `อัพเกรดไม่สำเร็จ (${itemName.toUpperCase()} ยังอยู่)`;
 
         if (itemName === 'magicstone') {
-            if (method === 'money') money -= 2000000000;
+            if (method === 'money') money -= 2000;
             else if (method === 'point') point -= 50;
         }
     } else {
@@ -236,7 +236,7 @@ if (action === 'buypemto') {
             magicstone -= 1;
             resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (Magicstone หาย)';
 
-            if (method === 'money') money -= 2000000000;
+            if (method === 'money') money -= 2000;
             else if (method === 'point') point -= 50;
         }
         logResult = 'แตก';
