@@ -162,7 +162,7 @@ if (action === 'buypemto') {
 
       if (action === 'upgrade') {
     const itemName = req.body.item || 'magicstone';
-    const method = req.body.method || 'money','point'; // 'money' หรือ 'point'
+    const method = req.body.method || 'money'; // 'money' หรือ 'point'
 
     let {
         token = 0,
