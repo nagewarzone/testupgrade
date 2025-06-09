@@ -160,64 +160,77 @@ if (action === 'buypemto') {
 
 
         if (action === 'upgrade') {
-            const itemName = 'topgm';
-            let { token = 0, topgm = 0, warzone = 0 } = userData;
+    // รับค่าชื่อไอเท็มจาก request หรือกำหนดเอง
+    const itemName = req.body.itemName || 'topgm';
 
-            if (token <= 0) return res.json({ success: false, message: 'คุณไม่มี PEMTO สำหรับอัปเกรด' });
-            if (topgm <= 0) return res.json({ success: false, message: 'คุณไม่มีไอเท็มสำหรับอัพเกรด' });
+    let { token = 0, topgm = 0, warzone = 0, magicstone = 0 } = userData;
 
-            const rateDoc = await db.collection('upgraderates').doc(itemName).get();
-            if (!rateDoc.exists) return res.json({ success: false, message: 'ไม่มีข้อมูลอัตราอัพเกรด' });
+    if (token <= 0) return res.json({ success: false, message: 'คุณไม่มี PEMTO สำหรับอัปเกรด' });
 
-            const { successRate, failRate, breakRate } = rateDoc.data();
-            if (
-                typeof successRate !== 'number' || typeof failRate !== 'number' || typeof breakRate !== 'number' ||
-                successRate < 0 || failRate < 0 || breakRate < 0 || successRate + failRate + breakRate > 1
-            ) return res.json({ success: false, message: 'ข้อมูลอัตราอัพเกรดไม่ถูกต้อง' });
+    // เช็คจำนวนไอเท็มที่ใช้ตามชื่อไอเท็ม
+    if (itemName === 'topgm' && topgm <= 0) return res.json({ success: false, message: 'คุณไม่มีไอเท็มสำหรับอัพเกรด' });
+    if (itemName === 'magicstone' && magicstone <= 0) return res.json({ success: false, message: 'คุณไม่มี MagicStone สำหรับอัพเกรด' });
 
-            const roll = Math.random();
-            let logResult, resultMessage;
-            token -= 1;
+    const rateDoc = await db.collection('upgraderates').doc(itemName).get();
+    if (!rateDoc.exists) return res.json({ success: false, message: 'ไม่มีข้อมูลอัตราอัพเกรด' });
 
-            if (roll < successRate) {
-                // อัพเกรดสำเร็จ
-                topgm -= 1;
-                warzone += 1;
-                logResult = 'สำเร็จ';
-                resultMessage = 'อัพเกรดสำเร็จ: Warzone';
+    const { successRate, failRate, breakRate } = rateDoc.data();
+    if (
+        typeof successRate !== 'number' || typeof failRate !== 'number' || typeof breakRate !== 'number' ||
+        successRate < 0 || failRate < 0 || breakRate < 0 || successRate + failRate + breakRate > 1
+    ) return res.json({ success: false, message: 'ข้อมูลอัตราอัพเกรดไม่ถูกต้อง' });
 
-                // ลบ sendDiscord ออก
-            } else if (roll < successRate + failRate) {
-                // ล้มเหลว
-                logResult = 'ล้มเหลว';
-                resultMessage = 'อัพเกรดไม่สำเร็จ (TOPGM ยังอยู่)';
+    const roll = Math.random();
+    let logResult, resultMessage;
+    token -= 1;
 
-                // ลบ sendDiscord ออก
-            } else {
-                // แตก
-                topgm -= 1;
-                logResult = 'แตก';
-                resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
-
-                // ลบ sendDiscord ออก
-            }
-
-            if (topgm < 0) topgm = 0;
-
-            await userRef.update({ token, topgm, warzone });
-
-            await db.collection('logs').add({
-                Date: admin.firestore.FieldValue.serverTimestamp(),
-                Username: username,
-                Name: name || '',
-                Item: itemName,
-                Result: logResult
-            });
-
-            return res.json({ success: true, result: logResult, resultMessage });
+    if (roll < successRate) {
+        // อัพเกรดสำเร็จ
+        if (itemName === 'topgm') {
+            topgm -= 1;
+            warzone += 1;
+            logResult = 'สำเร็จ';
+            resultMessage = 'อัพเกรดสำเร็จ: Warzone';
+        } else if (itemName === 'magicstone') {
+            magicstone -= 1;
+            warzone += 2;  // สมมติว่า magicstone ได้ warzone เพิ่ม 2 หน่วย
+            logResult = 'สำเร็จ';
+            resultMessage = 'อัพเกรดสำเร็จ: Warzone x2';
         }
+    } else if (roll < successRate + failRate) {
+        // ล้มเหลว
+        logResult = 'ล้มเหลว';
+        resultMessage = `อัพเกรดไม่สำเร็จ (${itemName.toUpperCase()} ยังอยู่)`;
+    } else {
+        // แตก
+        if (itemName === 'topgm') {
+            topgm -= 1;
+        } else if (itemName === 'magicstone') {
+            magicstone -= 1;
+        }
+        logResult = 'แตก';
+        resultMessage = `อัพเกรดล้มเหลว ไอเท็มสูญหาย (${itemName.toUpperCase()} หาย)`;
+    }
 
-        return res.json({ success: false, message: 'Unknown action' });
+    // ป้องกันค่าติดลบ
+    if (topgm < 0) topgm = 0;
+    if (magicstone < 0) magicstone = 0;
+
+    await userRef.update({ token, topgm, magicstone, warzone });
+
+    await db.collection('logs').add({
+        Date: admin.firestore.FieldValue.serverTimestamp(),
+        Username: username,
+        Name: name || '',
+        Item: itemName,
+        Result: logResult
+    });
+
+    return res.json({ success: true, result: logResult, resultMessage });
+}
+
+return res.json({ success: false, message: 'Unknown action' });
+
 
     } catch (err) {
         console.error(err);
