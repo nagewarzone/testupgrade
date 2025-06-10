@@ -50,7 +50,7 @@ app.post('/admin/login', (req, res) => {
 });
 
 app.post('/proxy', async (req, res) => {
-    const { action, username, password, name, pointChange, topgmChange, tokenChange } = req.body;
+    const { action, username, password, name, pointChange, topgmChange, tokenChange,warshoesChange } = req.body;
     if (!action) return res.json({ success: false, message: 'Missing action' });
 
     try {
@@ -68,7 +68,9 @@ app.post('/proxy', async (req, res) => {
                 warzone: 0,
                 bloodshoes: 0,
                 point: 0,
-                money: 0    
+                money: 0 ,
+                relevel: 0,
+                warshoes: 0    
             });
             return res.json({ success: true });
         }
@@ -130,7 +132,7 @@ if (action === 'buypemto') {
         .get();
 
     if (logSnap.empty) {
-        return res.json({ success: false, message: 'ยังไม่มีการแตกของ topgm' });
+        return res.json({ success: false, message: 'ยังไม่มีการแตกของ ปลอก TOP GM' });
     }
 
     const lastBrokenLog = logSnap.docs[0].data();
@@ -155,39 +157,97 @@ if (action === 'buypemto') {
         lastUsedBrokenLogTimestamp: lastBrokenTime
     });
 
-    return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง topgm กลับมาแล้ว' });
+    return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง ปลอก TOP GM กลับมาแล้ว' });
 }
  
+if (action === 'usepoint1') {
+    const username = req.body.username;
+    const userRef = db.collection('users').doc(username);
+    const userSnap = await userRef.get();
 
+    if (!userSnap.exists) {
+        return res.json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+    }
+
+    const userData = userSnap.data();
+
+    const currentPoint = userData.point || 0;
+    const currentwarshoes = userData.warshoes || 0;
+
+    // เช็ค log ล่าสุดของ user สำหรับไอเท็ม warshoes ที่ Result === 'แตก'
+    const logSnap = await db.collection('logs')
+        .where('Username', '==', username)
+        .where('Item', '==', 'warshoes')
+        .where('Result', '==', 'แตก')
+        .orderBy('Date', 'desc')
+        .limit(1)
+        .get();
+
+    if (logSnap.empty) {
+        return res.json({ success: false, message: 'ยังไม่มีการแตกของ Warrior shoes' });
+    }
+
+    const lastBrokenLog = logSnap.docs[0].data();
+    const lastBrokenTime = lastBrokenLog.Date; // Firestore Timestamp
+
+    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
+    if (userData.lastUsedBrokenLogTimestamp &&
+        userData.lastUsedBrokenLogTimestamp.isEqual &&
+        userData.lastUsedBrokenLogTimestamp.isEqual(lastBrokenTime)) {
+        return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
+    }
+
+    // เปลี่ยนเป็นเช็คว่า point ต้องมีอย่างน้อย 50
+    if (currentPoint < 50) {
+        return res.json({ success: false, message: 'POINT ไม่เพียงพอ (ต้องมีอย่างน้อย 50)' });
+    }
+
+    // หัก 50 point และเพิ่ม warshoes 1 พร้อมเก็บ timestamp
+    await userRef.update({
+        point: currentPoint - 50,
+        warshoes: currentwarshoes + 1,
+        lastUsedBrokenLogTimestamp: lastBrokenTime
+    });
+
+    return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง Warrior shoes กลับมาแล้ว' });
+}
 
       if (action === 'upgrade') {
-    const itemName = req.body.item || 'magicstone';
+    const itemName = req.body.item || 'warshoes';
     const method = req.body.method || 'money'; // 'money' หรือ 'point'
 
+    const upgradeMap = {
+        warshoes: {
+            to: 'bloodshoes',
+            cost: { money: 2000, point: 50 }
+        },
+        topgm: {
+            to: 'warzone',
+            cost: {}
+        }
+        // เพิ่มไอเท็มใหม่ที่นี่ได้ เช่น:
+        // "bluestone": { to: "superboots", cost: { money: 1000, point: 30 } }
+    };
+
+    if (!upgradeMap[itemName]) {
+        return res.json({ success: false, message: 'ไม่สามารถอัปเกรดไอเท็มนี้ได้' });
+    }
+
     let {
-        token = 0,
-        point = 0,
-        money = 0,
-        topgm = 0,
-        warzone = 0,
-        magicstone = 0,
-        bloodshoes = 0
+        token = 0, point = 0, money = 0,
+        [itemName]: itemCount = 0,
+        [upgradeMap[itemName].to]: targetItemCount = 0
     } = userData;
 
     if (token <= 0) return res.json({ success: false, message: 'คุณไม่มี PEMTO สำหรับอัปเกรด' });
+    if (itemCount <= 0) return res.json({ success: false, message: `คุณไม่มี ${itemName} สำหรับอัปเกรด` });
 
-    if ((itemName === 'topgm' && topgm <= 0) || (itemName === 'magicstone' && magicstone <= 0)) {
-        return res.json({ success: false, message: 'คุณไม่มีไอเท็มสำหรับอัปเกรด' });
+    const cost = upgradeMap[itemName].cost || {};
+    if (method === 'money' && cost.money && money < cost.money) {
+        return res.json({ success: false, message: `คุณมีเงินไม่พอ (ต้องใช้ ${cost.money}M)` });
     }
-
-    // ตรวจสอบเงื่อนไขพิเศษของ magicstone
-    if (itemName === 'magicstone') {
-        if (method === 'money' && money < 2000) {
-            return res.json({ success: false, message: 'คุณมีเงินไม่พอ (ต้องใช้ 2,000M)' });
-        }
-        if (method === 'point' && point < 50) {
-            return res.json({ success: false, message: 'คุณมี Point ไม่พอ (ต้องใช้ 50 Point)' });
-        }
+    if (method === 'point' && cost.point && point < cost.point) {
+        return res.json({ success: false, message: `คุณมี Point ไม่พอ (ต้องใช้ ${cost.point} Point)` });
     }
 
     const rateDoc = await db.collection('upgraderates').doc(itemName).get();
@@ -204,51 +264,37 @@ if (action === 'buypemto') {
     token -= 1;
 
     if (roll < successRate) {
-        // สำเร็จ
-        if (itemName === 'topgm') {
-            topgm -= 1;
-            warzone += 1;
-            resultMessage = 'อัพเกรดสำเร็จ: Warzone';
-        } else if (itemName === 'magicstone') {
-            magicstone -= 1;
-            bloodshoes += 1;
-            resultMessage = 'อัพเกรดสำเร็จ: Bloodshoes';
-
-            if (method === 'money') money -= 2000;
-            else if (method === 'point') point -= 50;
-        }
+        itemCount -= 1;
+        targetItemCount += 1;
+        resultMessage = `อัพเกรดสำเร็จ: ${upgradeMap[itemName].to.toUpperCase()}`;
         logResult = 'สำเร็จ';
     } else if (roll < successRate + failRate) {
-        // ล้มเหลว (ไม่เสียของ)
-        logResult = 'ล้มเหลว';
         resultMessage = `อัพเกรดไม่สำเร็จ (${itemName.toUpperCase()} ยังอยู่)`;
-
-        if (itemName === 'magicstone') {
-            if (method === 'money') money -= 2000;
-            else if (method === 'point') point -= 50;
-        }
+        logResult = 'ล้มเหลว';
     } else {
-        // แตก (ของหาย)
-        if (itemName === 'topgm') {
-            topgm -= 1;
-            resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
-        } else if (itemName === 'magicstone') {
-            magicstone -= 1;
-            resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (Magicstone หาย)';
-
-            if (method === 'money') money -= 2000;
-            else if (method === 'point') point -= 50;
-        }
+        itemCount -= 1;
+        resultMessage = `อัพเกรดล้มเหลว ไอเท็มสูญหาย (${itemName.toUpperCase()} หาย)`;
         logResult = 'แตก';
     }
 
+    // หัก cost ถ้ามี
+    if (method === 'money' && cost.money) money -= cost.money;
+    if (method === 'point' && cost.point) point -= cost.point;
+
     // ป้องกันค่าติดลบ
-    if (topgm < 0) topgm = 0;
-    if (magicstone < 0) magicstone = 0;
+    if (itemCount < 0) itemCount = 0;
+    if (targetItemCount < 0) targetItemCount = 0;
     if (money < 0) money = 0;
     if (point < 0) point = 0;
 
-    await userRef.update({ token, topgm, warzone, magicstone, bloodshoes, money, point });
+    // เตรียม object สำหรับ update
+    const updateData = {
+        token, point, money,
+        [itemName]: itemCount,
+        [upgradeMap[itemName].to]: targetItemCount
+    };
+
+    await userRef.update(updateData);
 
     await db.collection('logs').add({
         Date: admin.firestore.FieldValue.serverTimestamp(),
@@ -261,15 +307,6 @@ if (action === 'buypemto') {
     return res.json({ success: true, result: logResult, resultMessage });
 }
 
-
-return res.json({ success: false, message: 'Unknown action' });
-
-
-    } catch (err) {
-        console.error(err);
-        return res.json({ success: false, message: 'Server Error' });
-    }
-});
 
 // --------------------- Public & Admin APIs ---------------------
 
