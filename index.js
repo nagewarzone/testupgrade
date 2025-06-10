@@ -306,7 +306,7 @@ if (action === 'usepoint1') {
 
     return res.json({ success: true, result: logResult, resultMessage });
 }
-
+});
 
 // --------------------- Public & Admin APIs ---------------------
 
