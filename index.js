@@ -139,11 +139,11 @@ if (action === 'buypemto') {
     const lastBrokenTime = lastBrokenLog.Date; // Firestore Timestamp
 
     // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
-    if (userData.lastUsedBrokenLogTimestamp &&
-        userData.lastUsedBrokenLogTimestamp.isEqual &&
-        userData.lastUsedBrokenLogTimestamp.isEqual(lastBrokenTime)) {
-        return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
-    }
+  if (userData.lastUsedBroken_topgm &&
+    userData.lastUsedBroken_topgm.toMillis &&
+    userData.lastUsedBroken_topgm.toMillis() === lastBrokenTime.toMillis()) {
+    return res.json({ success: false, message: 'คุณได้ดึงจากการแตก topgm ครั้งนี้ไปแล้ว' });
+}
 
     // เปลี่ยนเป็นเช็คว่า point ต้องมีอย่างน้อย 50
     if (currentPoint < 50) {
@@ -151,12 +151,11 @@ if (action === 'buypemto') {
     }
 
     // หัก 50 point และเพิ่ม topgm 1 พร้อมเก็บ timestamp
-    await userRef.update({
-        point: currentPoint - 50,
-        topgm: currentTopgm + 1,
-        lastUsedBrokenLogTimestamp: lastBrokenTime
-    });
-
+  await userRef.update({
+    point: currentPoint - 50,
+    topgm: currentTopgm + 1,
+    lastUsedBroken_topgm: lastBrokenTime
+});
     return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง topgm กลับมาแล้ว' });
 }
     //ดึง warshoes  
@@ -190,24 +189,23 @@ if (action === 'buypemto') {
     const lastBrokenLog = logSnap.docs[0].data();
     const lastBrokenTime = lastBrokenLog.Date; // Firestore Timestamp
 
-    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
-    if (userData.lastUsedBrokenLogTimestamp &&
-        userData.lastUsedBrokenLogTimestamp.isEqual &&
-        userData.lastUsedBrokenLogTimestamp.isEqual(lastBrokenTime)) {
-        return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
-    }
-
+  // ตรวจสอบว่าเคยใช้ log นี้สำหรับ warshoes แล้วหรือยัง
+if (userData.lastUsedBroken_warshoes &&
+    userData.lastUsedBroken_warshoes.toMillis &&
+    userData.lastUsedBroken_warshoes.toMillis() === lastBrokenTime.toMillis()) {
+    return res.json({ success: false, message: 'คุณได้ดึงจากการแตก warshoes ครั้งนี้ไปแล้ว' });
+}
     // เปลี่ยนเป็นเช็คว่า point ต้องมีอย่างน้อย 50
     if (currentPoint < 50) {
         return res.json({ success: false, message: 'POINT ไม่เพียงพอ (ต้องมีอย่างน้อย 50)' });
     }
 
-    // หัก 50 point และเพิ่ม warshoes 1 พร้อมเก็บ timestamp
-    await userRef.update({
-        point: currentPoint - 50,
-        warshoes: currentwarshoes + 1,
-        lastUsedBrokenLogTimestamp: lastBrokenTime
-    });
+ // หัก 50 point และเพิ่ม warshoes 1 พร้อมเก็บ timestamp แยกของ warshoes
+await userRef.update({
+    point: currentPoint - 50,
+    warshoes: currentwarshoes + 1,
+    lastUsedBroken_warshoes: lastBrokenTime
+});
 
     return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง Warrior Shoes กลับมาแล้ว' });
 }
