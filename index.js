@@ -159,8 +159,59 @@ if (action === 'buypemto') {
 
     return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง topgm กลับมาแล้ว' });
 }
- 
+    //ดึง warshoes  
+ if (action === 'usepoint1') {
+    const username = req.body.username;
+    const userRef = db.collection('users').doc(username);
+    const userSnap = await userRef.get();
 
+    if (!userSnap.exists) {
+        return res.json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+    }
+
+    const userData = userSnap.data();
+
+    const currentPoint = userData.point || 0;
+    const currentwarshoes = userData.warshoes || 0;
+
+    // เช็ค log ล่าสุดของ user สำหรับไอเท็ม warshoes ที่ Result === 'แตก'
+    const logSnap = await db.collection('logs')
+        .where('Username', '==', username)
+        .where('Item', '==', 'warshoes')
+        .where('Result', '==', 'แตก')
+        .orderBy('Date', 'desc')
+        .limit(1)
+        .get();
+
+    if (logSnap.empty) {
+        return res.json({ success: false, message: 'ยังไม่มีการแตกของ Warrior Shoes' });
+    }
+
+    const lastBrokenLog = logSnap.docs[0].data();
+    const lastBrokenTime = lastBrokenLog.Date; // Firestore Timestamp
+
+    // ตรวจสอบว่าเคยใช้ log นี้แล้วหรือยัง
+    if (userData.lastUsedBrokenLogTimestamp &&
+        userData.lastUsedBrokenLogTimestamp.isEqual &&
+        userData.lastUsedBrokenLogTimestamp.isEqual(lastBrokenTime)) {
+        return res.json({ success: false, message: 'คุณได้ดึงจากการแตกครั้งนี้ไปแล้ว' });
+    }
+
+    // เปลี่ยนเป็นเช็คว่า point ต้องมีอย่างน้อย 50
+    if (currentPoint < 50) {
+        return res.json({ success: false, message: 'POINT ไม่เพียงพอ (ต้องมีอย่างน้อย 50)' });
+    }
+
+    // หัก 50 point และเพิ่ม warshoes 1 พร้อมเก็บ timestamp
+    await userRef.update({
+        point: currentPoint - 50,
+        warshoes: currentwarshoes + 1,
+        lastUsedBrokenLogTimestamp: lastBrokenTime
+    });
+
+    return res.json({ success: true, message: 'ใช้ POINT 50 เพื่อดึง Warrior Shoes กลับมาแล้ว' });
+}
+ 
 
       if (action === 'upgrade') {
     const itemName = req.body.item || 'warshoes';
