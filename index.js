@@ -65,10 +65,12 @@ app.post('/proxy', async (req, res) => {
                 password,
                 token: 0,
                 topgm: 0,
+                warshoes: 0,
                 warzone: 0,
                 bloodshoes: 0,
                 point: 0,
-                money: 0    
+                money: 0,
+                relevel: 0      
             });
             return res.json({ success: true });
         }
@@ -161,7 +163,7 @@ if (action === 'buypemto') {
 
 
       if (action === 'upgrade') {
-    const itemName = req.body.item || 'magicstone';
+    const itemName = req.body.item || 'warshoes';
     const method = req.body.method || 'money'; // 'money' หรือ 'point'
 
     let {
@@ -170,18 +172,18 @@ if (action === 'buypemto') {
         money = 0,
         topgm = 0,
         warzone = 0,
-        magicstone = 0,
+        warshoes = 0,
         bloodshoes = 0
     } = userData;
 
     if (token <= 0) return res.json({ success: false, message: 'คุณไม่มี PEMTO สำหรับอัปเกรด' });
 
-    if ((itemName === 'topgm' && topgm <= 0) || (itemName === 'magicstone' && magicstone <= 0)) {
+    if ((itemName === 'topgm' && topgm <= 0) || (itemName === 'warshoes' && warshoes <= 0)) {
         return res.json({ success: false, message: 'คุณไม่มีไอเท็มสำหรับอัปเกรด' });
     }
 
-    // ตรวจสอบเงื่อนไขพิเศษของ magicstone
-    if (itemName === 'magicstone') {
+    // ตรวจสอบเงื่อนไขพิเศษของ warshoes
+    if (itemName === 'warshoes') {
         if (method === 'money' && money < 2000) {
             return res.json({ success: false, message: 'คุณมีเงินไม่พอ (ต้องใช้ 2,000M)' });
         }
@@ -209,8 +211,8 @@ if (action === 'buypemto') {
             topgm -= 1;
             warzone += 1;
             resultMessage = 'อัพเกรดสำเร็จ: Warzone';
-        } else if (itemName === 'magicstone') {
-            magicstone -= 1;
+        } else if (itemName === 'warshoes') {
+            warshoes -= 1;
             bloodshoes += 1;
             resultMessage = 'อัพเกรดสำเร็จ: Bloodshoes';
 
@@ -223,7 +225,7 @@ if (action === 'buypemto') {
         logResult = 'ล้มเหลว';
         resultMessage = `อัพเกรดไม่สำเร็จ (${itemName.toUpperCase()} ยังอยู่)`;
 
-        if (itemName === 'magicstone') {
+        if (itemName === 'warshoes') {
             if (method === 'money') money -= 2000;
             else if (method === 'point') point -= 50;
         }
@@ -232,9 +234,9 @@ if (action === 'buypemto') {
         if (itemName === 'topgm') {
             topgm -= 1;
             resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (TOPGM หาย)';
-        } else if (itemName === 'magicstone') {
-            magicstone -= 1;
-            resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (Magicstone หาย)';
+        } else if (itemName === 'warshoes') {
+            warshoes -= 1;
+            resultMessage = 'อัพเกรดล้มเหลว ไอเท็มสูญหาย (warshoes หาย)';
 
             if (method === 'money') money -= 2000;
             else if (method === 'point') point -= 50;
@@ -244,11 +246,11 @@ if (action === 'buypemto') {
 
     // ป้องกันค่าติดลบ
     if (topgm < 0) topgm = 0;
-    if (magicstone < 0) magicstone = 0;
+    if (warshoes < 0) warshoes = 0;
     if (money < 0) money = 0;
     if (point < 0) point = 0;
 
-    await userRef.update({ token, topgm, warzone, magicstone, bloodshoes, money, point });
+    await userRef.update({ token, topgm, warzone, warshoes, bloodshoes, money, point });
 
     await db.collection('logs').add({
         Date: admin.firestore.FieldValue.serverTimestamp(),
