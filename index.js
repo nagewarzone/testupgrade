@@ -106,8 +106,19 @@ if (action === 'buypemto') {
         token: currentToken + 1
     });
 
+    // ✅ เพิ่ม log ลง collection 'logs'
+    await db.collection('logs').add({
+        Username: username,
+        Action: 'buy',
+        Item: 'pemto',
+        PointUsed: 200,
+        TokenAdded: 1,
+        Date: admin.firestore.Timestamp.now()
+    });
+
     return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 TopGM', newPoint: currentPoint - 200 });
 }
+
        if (action === 'usepoint') {
     const username = req.body.username;
     const userRef = db.collection('users').doc(username);
