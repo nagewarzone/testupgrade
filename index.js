@@ -246,11 +246,16 @@ await userRef.update({
 
     // ตรวจสอบเงื่อนไขพิเศษของ warshoes
     if (itemName === 'warshoes') {
-        if (method === 'money' && money < 2000) {
-            return res.json({ success: false, message: 'คุณมีเงินไม่พอ (ต้องใช้ 2,000M)' });
-        }
-        if (method === 'point' && point < 50) {
-            return res.json({ success: false, message: 'คุณมี Point ไม่พอ (ต้องใช้ 50 Point)' });
+        if (method === 'money') {
+            if (money < 2000) {
+                return res.json({ success: false, message: 'คุณมีเงินไม่พอ (ต้องใช้ 2,000M)' });
+            }
+        } else if (method === 'point') {
+            if (point < 50) {
+                return res.json({ success: false, message: 'คุณมี Point ไม่พอ (ต้องใช้ 50 Point)' });
+            }
+        } else {
+            return res.json({ success: false, message: 'วิธีการอัปเกรดไม่ถูกต้อง (เลือก money หรือ point)' });
         }
     }
 
@@ -305,6 +310,8 @@ await userRef.update({
         }
         logResult = 'แตก';
     }
+
+
 
     // ป้องกันค่าติดลบ
     if (topgm < 0) topgm = 0;
