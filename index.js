@@ -92,32 +92,34 @@ if (action === 'buypemto') {
     }
 
     const userData = userSnap.data();
-
     const currentPoint = userData.point || 0;
     const currentToken = userData.token || 0;
+    const currentBuyCount = userData.buypemtoCount || 0; // ✅ เริ่มจาก 0 ถ้าไม่มี
 
     if (currentPoint < 200) {
         return res.json({ success: false, message: 'พ้อยท์ไม่เพียงพอ (ต้องมีอย่างน้อย 200)' });
     }
 
-    // ตัดพ้อยท์และเพิ่ม pemto
+    // ตัดพ้อยท์และเพิ่ม pemto และเพิ่มจำนวนการซื้อ
     await userRef.update({
         point: currentPoint - 200,
-        token: currentToken + 1
+        token: currentToken + 1,
+        buypemtoCount: currentBuyCount + 1 // ✅ เพิ่ม field นี้ใน user
     });
 
-    // ✅ เพิ่ม log ลง collection 'logs'
+    // เพิ่ม log ลงใน collection 'logs'
     await db.collection('logs').add({
         Username: username,
-        Action: 'buy',
+        Action: 'Buy Pemto',
         Item: 'pemto',
         PointUsed: 200,
-        TokenAdded: 1,
+        Result: 'Success',
         Date: admin.firestore.Timestamp.now()
     });
 
     return res.json({ success: true, message: 'ซื้อ Pemto สำเร็จ! ได้รับ 1 TopGM', newPoint: currentPoint - 200 });
 }
+
 
        if (action === 'usepoint') {
     const username = req.body.username;
